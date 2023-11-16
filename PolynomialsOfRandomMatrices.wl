@@ -525,32 +525,37 @@ GenerateSpace[Vector_,MatrixList_,TType_,PPrecision_:MachinePrecision]:=
 	(* given Vector v and MatrixList M_i this program returns the basis of the space 
 	spanned by {v, M_iv, M_jM_iv ,...} and the corresponding indices *)
 	Block[{AbstractBasis,VectorBasis,NewVector,AbstractAll,VectorAll,
-		start,end,startAll,endAll},
+		start,end,startAll,endAll,matrixRankTolerance,$MinPrecision},
+			
 		Switch[TType,
-		"Exact",
-			Block[{},
-				AbstractAll={{}};(* this will be a complete set of indices in which 
-					we will be looking for the basis indices *)
-				VectorAll={Vector}; (* this will be a complete set of vectors *)
-				AbstractBasis={{}};(*  AbstractBasis=\tilde{I}_U contains the emptyset... *)
-				VectorBasis={Vector}; (* which corresponds to the vector in the VectroBasis *)
-				start=1;(* start gives the position of the first basis vector of "length" 
-					L ..; Initially VectorBasis1 has only one vector of "length" 0 *)
-				end=1;(* end gives the position of the last basis vector of "length" 
-					L ..; Initially VectorBasis1 has only one vector of "length" 0 *)
-				startAll=1;(* startAll gives the position of the first index of "length" 
-					L ..; in AbstractAll *) 
-				endAll=1;(* endAll gives the position of the last index of "length" L .. 
-					in AbstractAll  *)
-				
-				While[start<=end, (* We stop the iteration if no new "longer" basis vectors 
+			"Exact", matrixRankTolerance=0;,
+			"MachinePrecision", $MinPrecision=MachinePrecision; matrixRankTolerance=(0.1)^8;,
+			"HighPrecision", $MinPrecision=PPrecision; matrixRankTolerance=(0.1)^8;
+			];
+		
+		AbstractAll={{}};(* this will be a complete set of indices in which 
+			we will be looking for the basis indices *)
+		VectorAll={Vector}; (* this will be a complete set of vectors *)
+		AbstractBasis={{}};(*  AbstractBasis=\tilde{I}_U contains the emptyset... *)
+		VectorBasis={Vector}; (* which corresponds to the vector in the VectroBasis *)
+		start=1;(* start gives the position of the first basis vector of "length" 
+			L ..; Initially VectorBasis1 has only one vector of "length" 0 *)
+		end=1;(* end gives the position of the last basis vector of "length" 
+			L ..; Initially VectorBasis1 has only one vector of "length" 0 *)
+		startAll=1;(* startAll gives the position of the first index of "length" 
+			L ..; in AbstractAll *) 
+		endAll=1;(* endAll gives the position of the last index of "length" L .. 
+			in AbstractAll  *)
+
+			
+		While[start<=end, (* We stop the iteration if no new "longer" basis vectors 
 					were added after doing the following*)
 					For[i=startAll,i<=endAll,i++,(* we take all the vectors of the highest 
 						order computed so far (that were in fact added on the previous step) ..*)
 						For[k=1,k<=Length[MatrixList],k++, (* and we compute vectors of 
 							higher degree ..*)
 							NewVector=MatrixList[[k]] . VectorAll[[i]]; 		
-							If[MatrixRank[Transpose[Append[VectorBasis,NewVector]]]
+							If[MatrixRank[Append[VectorBasis,NewVector],Tolerance->matrixRankTolerance]
 								>Length[VectorBasis], (* and if this vector is linearly 
 									independent of the other basis vectors that are 
 									already in VectorBasis.. *)
@@ -573,122 +578,10 @@ GenerateSpace[Vector_,MatrixList_,TType_,PPrecision_:MachinePrecision]:=
 					endAll=Length[AbstractAll]; (* and end here *)
 				];
 				
-				VectorBasis=Transpose[VectorBasis]; (* The basis vectors will be 
+		VectorBasis=Transpose[VectorBasis]; (* The basis vectors will be 
 					considered as columns*)
 				
-				Return[{AbstractBasis,VectorBasis}];
-			];	
-		,
-		"MachinePrecision",
-			Block[{$MinPrecision=MachinePrecision},		
-				AbstractAll={{}};(* this will be a complete set of indices in which we 
-				will be looking for the basis indices *)
-				VectorAll={Vector}; (* this will be a complete set of vectors *)
-				AbstractBasis={{}}; (* AbstractBasis=\tilde{I}_U contains the emptyset... *)
-				VectorBasis={Vector};(* which corresponds to the vector in the VectroBasis *)
-				start=1; (* start gives the position of the first basis vector of 
-					"length" L ..; Initially VectorBasis1 has only one vector of "length" 0 *)
-				end=1;(* end gives the position of the last basis vector of "length" L ..; 
-					Initially VectorBasis1 has only one vector of "length" 0 *)
-				startAll=1;(* startAll gives the position of the first index of "length" L .. 
-					in AbstractAll *) 
-				endAll=1;(* endAll gives the position of the last index of "length" L .. 
-					in AbstractAll  *)
-				
-				While[start <= end,  (* We stop the iteration if no new "longer" basis 
-					vectors were added after doing the following*)
-					For[i=startAll,i<=endAll,i++,(* we take all the vectors of the highest order 
-						computed so far (that were in fact added on the previous step) ..*)
-						For[k=1,k<=Length[MatrixList],k++, (* and we compute vectors of 
-							higher degree ..*)
-							NewVector=MatrixList[[k]] . VectorAll[[i]];
-							If[MatrixRank[Append[VectorBasis,NewVector],Tolerance->10^(-8)]
-									>Length[VectorBasis],(* and if this vector is linearly 
-										independent of the other basis vectors that are 
-										already in VectorBasis.. *) 
-								VectorBasis=Append[VectorBasis,NewVector]; (* we add the 
-								new vector to VectorBasis ..*)
-								AbstractBasis=Append[AbstractBasis,Prepend[AbstractAll[[i]],k]];  
-									(* and add the corresponding index to AbstractBasis *)
-							];
-							AbstractAll=Append[AbstractAll,Prepend[AbstractAll[[i]],k]]; 
-							(* and we add all the indices to AbstractAll *)
-							VectorAll=Append[VectorAll,NewVector]; (* we add all the 
-							vectors we computed to the VectorAll *)
-						];
-					];
-					start=end+1; (* The basis vectors of the biggest "length" should 
-						start here.. *)
-					end=Length[VectorBasis];(* and end here.. *)
-					startAll=endAll+1;(* newly added indices of the highest order start 
-						here.. *)
-					endAll=Length[AbstractAll]; (* and end here *)
-				];
-				
-				VectorBasis=Transpose[VectorBasis]; (* The basis vectors will be 
-					considered as columns*)
-				
-				Return[{AbstractBasis,VectorBasis}];
-			];
-		,
-		"HighPrecision",
-			Block[{$MinPrecision=PPrecision},
-			
-				AbstractAll={{}};(* this will be a complete set of indices in which 
-					we will be looking for the basis indices *)
-				VectorAll={Vector}; (* this will be a complete set of vectors *)
-				AbstractBasis={{}}; (* AbstractBasis=\tilde{I}_U contains the 
-					emptyset... *)
-				VectorBasis={Vector};(* which corresponds to the vector in the 
-					VectroBasis *)
-				start=1; (* start gives the position of the first basis vector of 
-					"length" L ..; Initially VectorBasis1 has only one vector of "length" 0 *)
-				end=1;(* end gives the position of the last basis vector of "length" L ..; 
-					Initially VectorBasis1 has only one vector of "length" 0 *)
-				startAll=1;(* startAll gives the position of the first index of 
-					"length" L ..; in AbstractAll *) 
-				endAll=1;(* endAll gives the position of the last index of "length" L .. 
-					in AbstractAll  *)
-				
-				While[start<= end,  (* We stop the iteration if no new "longer" basis 
-						vectors were added after doing the following*)
-					For[i=startAll,i<=endAll,i++,(* we take all the vectors of the 
-							highest order computed so far (that were in fact added on the 
-							previous step) ..*)
-						For[k=1,k<=Length[MatrixList],k++, (* and we compute vectors of 
-								higher degree ..*)
-							NewVector=MatrixList[[k]] . VectorAll[[i]];
-							
-							If[MatrixRank[Append[VectorBasis,NewVector],Tolerance->10^(-8)]
-									>Length[VectorBasis],(* and if this vector is linearly 
-									independent of the other basis vectors that are already 
-									in VectorBasis.. *) 
-								VectorBasis=Append[VectorBasis,NewVector]; (* we add the 
-										new vector to VectorBasis ..*)
-								AbstractBasis=Append[AbstractBasis,Prepend[AbstractAll[[i]],k]];  
-										(* and add the corresponding index to AbstractBasis *)
-							];
-							AbstractAll=Append[AbstractAll,Prepend[AbstractAll[[i]],k]]; 
-									(* and we add all the indices to AbstractAll *)
-							VectorAll=Append[VectorAll,NewVector]; (* we add all the vectors 
-									we computed to the VectroAll *)
-						];
-					];
-					start=end+1; (* The basis vectors of the biggest "length" should 
-							start here.. *)
-					end=Length[VectorBasis];(* and end here *)
-					startAll=endAll+1;(* the newly added indices of the highest order 
-							start here.. *)
-					endAll=Length[AbstractAll]; (* and end here *)
-				];
-				
-				VectorBasis=Transpose[VectorBasis]; (* The basis vectors will be 
-						considered as columns*)
-				
-				Return[{AbstractBasis,VectorBasis}];
-			];
-		
-		];
+	Return[{AbstractBasis,VectorBasis}];
 	
 	];
 
@@ -696,312 +589,176 @@ MinimalLinearization[Pol_,TType_,PPrecision_:MachinePrecision]:=
 	Block[{InLin,VariableList,ConstantMatrix,ConstantMatrixInverse,LinearizationMatrixList,
 			E1,AbstractBasis1,VectorBasis1,PU,PUInverse,PUL,DualVector,AbstractBasis2,
 			VectorBasis2,VectorBasis3,A,NewConstantMatrix,NewLinearizationMatrixList,
-			NewLinearization,W1,W,NewVector},
+			NewLinearization,W1,W,NewVector,$MinPrecision},
 	
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
 (* Initial linearization *)
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
 	
-	Switch[TType,
-	"Exact",
-		Block[{},
-			InLin=BigLinearization[Pol]; (* InLin : Initial (big) linearization \[Rule] L *) 
-			VariableList=DeleteDuplicates[Cases[InLin,_Symbol,Infinity]]; (* List of variables *)
-			ConstantMatrix=InLin/.Table[VariableList[[i]]->0,{i,Length[VariableList]}]; 
-					(* Constant matrix of the initial (big) linearization \[Rule] K_0 ... *)
-			ConstantMatrixInverse=Simplify[Inverse[ConstantMatrix]]; 
-					(* ... and its inverse *)
-			LinearizationMatrixList=
-				Table[Simplify[D[InLin,VariableList[[i]]] . ConstantMatrixInverse],
-					{i,Length[VariableList]}]; (* and the (non symmetric) linearization matrices 
-					K_i K_0^(-1) *)
-			E1=SparseArray[{{1}->1},Length[InLin]]//Normal;
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* First stage of the minimization procedure, constructing of the subspece U *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			{AbstractBasis1,VectorBasis1}=GenerateSpace[E1,LinearizationMatrixList,TType];
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* PU is the projection on U *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			
-			PU=Simplify[
-				VectorBasis1 .
-					Inverse[ConjugateTranspose[VectorBasis1] . VectorBasis1,Method->"DivisionFreeRowReduction"] .
-					ConjugateTranspose[VectorBasis1]
-				];(* and PU=VectorBasis.(VectorBasis^*.BectorBasis)^{-1}BectorBasis^*,  *)
-			PUL=Table[Simplify[PU . ConjugateTranspose[LinearizationMatrixList[[i]]]],{i,Length[VariableList]}];
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the indices \mathcal{I}_\tilde{U} that correspond to \tilde{U} *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			DualVector=Simplify[PU . ConstantMatrixInverse . SparseArray[{{1}->1},Length[InLin]]//Normal];
-			{AbstractBasis2,VectorBasis2}=GenerateSpace[DualVector,PUL,TType];
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the basis that allows rewriting the minimal linearization using the K_i and K_0^{-1} *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			VectorBasis3={E1};
-			
-			For[i=2,i<=Length[AbstractBasis2],i++,
-				NewVector=LinearizationMatrixList[[AbstractBasis2[[i]][[1]]]];
-				For[j=2,j<=Length[AbstractBasis2[[i]]],j++,
-					NewVector=NewVector . LinearizationMatrixList[[AbstractBasis2[[i]][[j]]]];
-				];
-				NewVector=NewVector . E1;
-				VectorBasis3=Append[VectorBasis3,NewVector];
+	Switch[TType, (* define InLin : Initial (big) linearization \[Rule] L and set the precision*) 
+			"Exact", InLin=BigLinearization[Pol];,
+			"MachinePrecision", $MinPrecision=MachinePrecision; InLin=N[BigLinearization[Pol]];,
+			"HighPrecision", $MinPrecision=PPrecision; InLin=N[BigLinearization[Pol],PPrecision];
+			];	 
+	VariableList=DeleteDuplicates[Cases[InLin,_Symbol,Infinity]]; (* List of variables *)
+	ConstantMatrix=InLin/.Table[VariableList[[i]]->0,{i,Length[VariableList]}]; 
+			(* Constant matrix of the initial (big) linearization \[Rule] K_0 ... *)
+	Switch[TType, (* ... and its inverse *)
+			"Exact", ConstantMatrixInverse=Simplify[Inverse[ConstantMatrix]];,
+			"MachinePrecision", ConstantMatrixInverse
+				=LinearSolve[ConstantMatrix,IdentityMatrix[Length[ConstantMatrix]]];,
+			"HighPrecision", ConstantMatrixInverse
+				=LinearSolve[ConstantMatrix,IdentityMatrix[Length[ConstantMatrix]]];
 			];
-			VectorBasis3=Transpose[VectorBasis3];
 			
-			A=VectorBasis3; (* this is the matrix A from the notes *)
-
+	Switch[TType, (* ... and the (non symmetric) linearization matrices K_i K_0^(-1) *)
+			"Exact", LinearizationMatrixList
+				=Table[Simplify[D[InLin,VariableList[[i]]] . ConstantMatrixInverse],{i,Length[VariableList]}];,
+			"MachinePrecision", LinearizationMatrixList
+				=Table[D[InLin,VariableList[[i]]] . ConstantMatrixInverse,{i,Length[VariableList]}];,
+			"HighPrecision", LinearizationMatrixList
+				=Table[D[InLin,VariableList[[i]]] . ConstantMatrixInverse,{i,Length[VariableList]}];
+			];
+	Switch[TType, (* ... and matrix E1 *)
+			"Exact", E1=SparseArray[{{1}->1},Length[InLin]]//Normal;,
+			"MachinePrecision", E1=SparseArray[{{1}->1},Length[InLin]]//Normal;,
+			"HighPrecision", E1=N[SparseArray[{{1}->1},Length[InLin]]//Normal,PPrecision];
+			];
+	
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the minimal (not yet canonical) linearization *)
+(* First stage of the minimization procedure: constructing the subspace U *)
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			NewConstantMatrix=Simplify[
-				ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . VectorBasis3
-				]; (* \tilde{K}_0 = A^*.K_0^{-1}.A *)
-			NewLinearizationMatrixList
-			=Table[
-				Simplify[
-						ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . LinearizationMatrixList[[i]] . VectorBasis3
-						],{i,Length[VariableList]}
-				];  
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the cannonical linearization *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			W1=Simplify[Norm[NewConstantMatrix[[1]]]]; (* W1 gives the norm of the first 
-					row/column of the constant matrix of the minimal but not canonical 
-					linearization (\tilde{K_0}) *)
-			W=Simplify[Orthogonalize[ExtendToBasis[{Conjugate[NewConstantMatrix[[1]]]/W1}]]]; 
-					(* we construct a unitary matrix W such that its first row is parallel 
-					to the column of \tilde{K_0} (conjugate of the first row) *)
-			W=Transpose[W]; (* now the first column is parallel to the first column *)
-			
-			NewConstantMatrix=Simplify[ConjugateTranspose[W] . NewConstantMatrix . W/(W1*W1)]; 
-					(* now we get a constant matrix of the canonical minimal linearization .. *)
-			NewLinearizationMatrixList=
-				Table[
-					Simplify[ConjugateTranspose[W] . NewLinearizationMatrixList[[i]] . W/(W1*W1)],
-					{i,Length[VariableList]}
-					]; (* and all the rest linearization matrices of the canonical 
-						minimal linearization *)
-			
-			NewLinearization=
-				Simplify[
-					NewConstantMatrix+Total[Table[VariableList[[k]]*NewLinearizationMatrixList[[k]],{k,Length[VariableList]}]]
-					]; (* and compute the canonical minimal linearization*)
-		];
-	,
-	(*************)
-	"MachinePrecision",
-	(*************)
-		Block[{},
-			InLin=N[BigLinearization[Pol]]; (* InLin : Initial (big) linearization \[Rule] L *) 
-			VariableList=DeleteDuplicates[Cases[InLin,_Symbol,Infinity]]; (* List of variables *)
-			ConstantMatrix=InLin/.Table[VariableList[[i]]->0,{i,Length[VariableList]}]; 
-					(* Constant matrix of the initial (big) linearization \[Rule] K_0 ...*) 
-			ConstantMatrixInverse
-				=LinearSolve[ConstantMatrix,N[IdentityMatrix[Length[ConstantMatrix]]]]; 
-					(* ... and its inverse *)
-			LinearizationMatrixList
-				=Table[D[InLin,VariableList[[i]]] . ConstantMatrixInverse,{i,Length[VariableList]}]; 
-					(* Matrices that give the initial non-symmetric linearization \[Rule] K_i .K_0^{-1}*)
-			
-			E1=SparseArray[{{1}->1},Length[InLin]]//Normal; 
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* First stage of the minimization procedure: constructing the subspece U *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			{AbstractBasis1,VectorBasis1}=GenerateSpace[E1,LinearizationMatrixList,TType];
-			
+	{AbstractBasis1,VectorBasis1}=GenerateSpace[E1,LinearizationMatrixList,TType];
+	
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
 (* PU is the projection on U *)
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			PUInverse=
+	Switch[TType, 
+			"Exact", PUInverse
+				=Simplify[Inverse[ConjugateTranspose[VectorBasis1] . VectorBasis1,Method->"DivisionFreeRowReduction"]];,
+			"MachinePrecision", PUInverse=
 				LinearSolve[
 					ConjugateTranspose[VectorBasis1] . VectorBasis1,N[IdentityMatrix[Length[Transpose[VectorBasis1]]]]
-					];
-			PU=VectorBasis1 . PUInverse . ConjugateTranspose[VectorBasis1];(* and 
-					PU=VectorBasis.(VectorBasis^*.BectorBasis)^{-1}BectorBasis^*,  *) 
-			PUL=Table[
-					PU . ConjugateTranspose[LinearizationMatrixList[[i]]],
-						{i,Length[VariableList]}
-					]; 
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the indices \mathcal{I}_\tilde{U} that correspond to \tilde{U} *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			  DualVector=PU . ConstantMatrixInverse . E1;
-			
-			{AbstractBasis2,VectorBasis2}=GenerateSpace[DualVector,PUL,TType];
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the basis that allows rewriting the minimal linearization using the K_i and K_0^{-1} *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			VectorBasis3={E1};
-			
-			For[i=2,i<=Length[AbstractBasis2],i++,
-				NewVector=LinearizationMatrixList[[AbstractBasis2[[i]][[1]]]];
-				
-				For[j=2,j<=Length[AbstractBasis2[[i]]],j++,
-					NewVector=NewVector . LinearizationMatrixList[[AbstractBasis2[[i]][[j]]]]; 
-				];
-				NewVector=NewVector . E1;
-				VectorBasis3=Append[VectorBasis3,NewVector];
-			];
-			
-			VectorBasis3=Transpose[VectorBasis3];
-			A=VectorBasis3; (* this is the matrix A from the notes *) 
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the minimal (not yet canonical) linearization *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			NewConstantMatrix
-				=ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . VectorBasis3;
-					(* \tilde{K}_0 = A^*.K_0^{-1}.A *)
-			NewLinearizationMatrixList
-				=Table[
-					ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . LinearizationMatrixList[[i]] . VectorBasis3,
-						{i,Length[VariableList]}
-					];
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* Constructing the cannonical linearization *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			W1=Norm[NewConstantMatrix[[1]]];(* W1 gives the norm of the first row/column 
-					of the constant matrix of the minimal but not canonical linearization 
-					(\tilde{K_0}) *)
-			W=Orthogonalize[ExtendToBasis[{Conjugate[NewConstantMatrix[[1]]]/W1}]]; 
-					(* we construct a unitary matrix W such that its first row is 
-					parallel to the column of \tilde{K_0} (conjugate of the first row) *)  
-			 W=Transpose[W]; (* now the first column is parallel to the first column *)
-			
-			NewConstantMatrix=ConjugateTranspose[W] . NewConstantMatrix . W/(W1*W1); 
-					(* now we get a constant matrix of the canonical minimal linearization .. *)
-			NewLinearizationMatrixList
-				=Table[
-					ConjugateTranspose[W] . NewLinearizationMatrixList[[i]] . W/(W1*W1),
-						{i,Length[VariableList]}
-					];(* and all the rest linearization matrices of the canonical 
-						minimal linearization *)  
-			NewLinearization
-				=NewConstantMatrix
-					+Total[
-						Table[VariableList[[k]]*NewLinearizationMatrixList[[k]],
-							{k,Length[VariableList]}
-							]
-						]; (* and compute the canonical minimal linearization*)
-			
-		];
-	,
-	(*************)
-	"HighPrecision",
-	(*************)
-		Block[{$MinPrecision=PPrecision},
-			InLin=N[BigLinearization[Pol],PPrecision]; (* InLin : Initial (big) 
-					linearization \[Rule] L *) 
-			VariableList=DeleteDuplicates[Cases[InLin,_Symbol,Infinity]]; 
-					(* List of variables *)
-			ConstantMatrix=InLin/.Table[VariableList[[i]]->0,{i,Length[VariableList]}]; 
-					(* Constant matrix of the initial (big) linearization \[Rule] K_0 ...*) 
-			ConstantMatrixInverse
-				=LinearSolve[ConstantMatrix,IdentityMatrix[Length[ConstantMatrix]]]; 
-					(* ... and its inverse *)
-			LinearizationMatrixList
-				=Table[
-					D[InLin,VariableList[[i]]] . ConstantMatrixInverse,{i,Length[VariableList]}
-					]; (* Matrices that give the initial non-symmetric linearization \[Rule] 
-						K_i .K_0^{-1}*)
-			
-			E1=N[SparseArray[{{1}->1},Length[InLin]]//Normal,PPrecision]; 
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* First stage of the minimization procedure: constructing the subspece U *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			{AbstractBasis1,VectorBasis1}=GenerateSpace[E1,LinearizationMatrixList,TType];
-			
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-(* PU is the projection on U *)
-(*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			PUInverse
+					];,
+			"HighPrecision", PUInverse
 				=LinearSolve[
 					ConjugateTranspose[VectorBasis1] . VectorBasis1,IdentityMatrix[Length[Transpose[VectorBasis1]]]
 					];
-			PU=VectorBasis1 . PUInverse . ConjugateTranspose[VectorBasis1];(* and 
-					PU=VectorBasis.(VectorBasis^*.BectorBasis)^{-1}BectorBasis^*,  *) 
-			PUL=Table[
-					PU . ConjugateTranspose[LinearizationMatrixList[[i]]],
-						{i,Length[VariableList]}
-					]; 
-			
+			];
+	Switch[TType, (* ... and we compute PU=VectorBasis.(VectorBasis^*.BectorBasis)^{-1}BectorBasis^*,  *)
+			"Exact", PU=Simplify[VectorBasis1 . PUInverse . ConjugateTranspose[VectorBasis1]];,
+			"MachinePrecision", PU=VectorBasis1 . PUInverse . ConjugateTranspose[VectorBasis1];,
+			"HighPrecision", PU=VectorBasis1 . PUInverse . ConjugateTranspose[VectorBasis1];
+			];
+	Switch[TType, 
+			"Exact", PUL
+				=Table[Simplify[PU . ConjugateTranspose[LinearizationMatrixList[[i]]]],{i,Length[VariableList]}];,
+			"MachinePrecision", PUL=Table[PU . ConjugateTranspose[LinearizationMatrixList[[i]]],{i,Length[VariableList]}];,
+			"HighPrecision", PUL=Table[PU . ConjugateTranspose[LinearizationMatrixList[[i]]],{i,Length[VariableList]}]; 
+			];
+	
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
 (* Constructing the indices \mathcal{I}_\tilde{U} that correspond to \tilde{U} *)
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			DualVector=PU . ConstantMatrixInverse . E1;
-			
-			{AbstractBasis2,VectorBasis2}=GenerateSpace[DualVector,PUL,TType];
-			
+	Switch[TType, 
+			"Exact", DualVector=Simplify[PU . ConstantMatrixInverse . E1];,
+			"MachinePrecision", DualVector=PU . ConstantMatrixInverse . E1;,
+			"HighPrecision", DualVector=PU . ConstantMatrixInverse . E1; 
+			];
+	
+	{AbstractBasis2,VectorBasis2}=GenerateSpace[DualVector,PUL,TType];
+	
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
 (* Constructing the basis that allows rewriting the minimal linearization using the K_i and K_0^{-1} *)
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			VectorBasis3={E1};
-			
-			For[i=2,i<=Length[AbstractBasis2],i++,
-				NewVector=LinearizationMatrixList[[AbstractBasis2[[i]][[1]]]];
-				
-				For[j=2,j<=Length[AbstractBasis2[[i]]],j++,
-					NewVector=NewVector . LinearizationMatrixList[[AbstractBasis2[[i]][[j]]]]; 
-					];
-				NewVector=NewVector . E1;
-				VectorBasis3=Append[VectorBasis3,NewVector];
-				];
-			
-			VectorBasis3=Transpose[VectorBasis3];
-			A=VectorBasis3; (* this is the matrix A from the notes *) 
-			
+	VectorBasis3={E1};
+	
+	For[i=2,i<=Length[AbstractBasis2],i++,
+		NewVector=LinearizationMatrixList[[AbstractBasis2[[i]][[1]]]];
+		For[j=2,j<=Length[AbstractBasis2[[i]]],j++,
+			NewVector=NewVector . LinearizationMatrixList[[AbstractBasis2[[i]][[j]]]];
+		];
+		NewVector=NewVector . E1;
+		VectorBasis3=Append[VectorBasis3,NewVector];
+	];
+	VectorBasis3=Transpose[VectorBasis3];
+	
+	A=VectorBasis3; (* this is the matrix A from the notes *)
+
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
 (* Constructing the minimal (not yet canonical) linearization *)
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			NewConstantMatrix
-				=ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . VectorBasis3;
-					(* \tilde{K}_0 = A^*.K_0^{-1}.A *)
-			NewLinearizationMatrixList
+	Switch[TType, (* \tilde{K}_0 = A^*.K_0^{-1}.A *)
+			"Exact", NewConstantMatrix
+				=Simplify[ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . VectorBasis3];,
+			"MachinePrecision", NewConstantMatrix
+				=ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . VectorBasis3;,
+			"HighPrecision", NewConstantMatrix
+				=ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . VectorBasis3; 
+			];
+	Switch[TType,
+			"Exact", NewLinearizationMatrixList
 				=Table[
-					ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . LinearizationMatrixList[[i]] . VectorBasis3,
-						{i,Length[VariableList]}
-					];
-
+				Simplify[
+				ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . LinearizationMatrixList[[i]] . VectorBasis3
+				],{i,Length[VariableList]}
+				];,
+			"MachinePrecision", NewLinearizationMatrixList
+				=Table[
+				ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . LinearizationMatrixList[[i]] . VectorBasis3
+					,{i,Length[VariableList]}
+				];,
+			"HighPrecision", NewLinearizationMatrixList
+				=Table[
+				ConjugateTranspose[VectorBasis3] . ConstantMatrixInverse . LinearizationMatrixList[[i]] . VectorBasis3
+					,{i,Length[VariableList]}
+				];
+			];
+			
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
 (* Constructing the cannonical linearization *)
 (*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*)
-			W1=Norm[NewConstantMatrix[[1]]];(* W1 gives the norm of the first row/column 
-					of the constant matrix of the minimal but not canonical linearization 
-					(\tilde{K_0}) *)
-			W=Orthogonalize[ExtendToBasis[{Conjugate[NewConstantMatrix[[1]]]/W1}]]; 
-					(* we construct a unitary matrix W such that its first row is parallel 
-					to the column of \tilde{K_0} (conjugate of the first row) *)  
-			W=Transpose[W]; (* now the first column is parallel to the first column *)
-			
-			NewConstantMatrix=ConjugateTranspose[W] . NewConstantMatrix . W/(W1*W1); 
-				(* now we get a constant matrix of the canonical minimal linearization .. *)
-			NewLinearizationMatrixList
-				=Table[
-					ConjugateTranspose[W] . NewLinearizationMatrixList[[i]] . W/(W1*W1),
-						{i,Length[VariableList]}
-					];(* and all the rest linearization matrices of the canonical 
-						minimal linearization *)  
-			NewLinearization
-				=NewConstantMatrix+Total[
-					Table[VariableList[[k]]*NewLinearizationMatrixList[[k]],{k,Length[VariableList]}]
-					]; (* and compute the canonical minimal linearization*)
-			
-		];
-	
-	];
-	
+	Switch[TType, (* W1 gives the norm of the first row/column of the constant matrix of the minimal but 
+					not canonical linearization (\tilde{K_0}) *)
+			"Exact", W1=Simplify[Norm[NewConstantMatrix[[1]]]];,
+			"MachinePrecision", W1=Norm[NewConstantMatrix[[1]]];,
+			"HighPrecision", W1=Norm[NewConstantMatrix[[1]]];
+			];
+	Switch[TType, (* we construct a unitary matrix W such that its first row is parallel 
+				to the column of \tilde{K_0} (conjugate of the first row) *)
+			"Exact", W=Simplify[Orthogonalize[ExtendToBasis[{Conjugate[NewConstantMatrix[[1]]]/W1}]]];,
+			"MachinePrecision", W=Orthogonalize[ExtendToBasis[{Conjugate[NewConstantMatrix[[1]]]/W1}]];,
+			"HighPrecision", W=Orthogonalize[ExtendToBasis[{Conjugate[NewConstantMatrix[[1]]]/W1}]];
+			];
+
+	W=Transpose[W]; (* now the first column is parallel to the first column *)
+
+	Switch[TType, (* now we get a constant matrix of the canonical minimal linearization .. *)
+			"Exact", NewConstantMatrix=Simplify[ConjugateTranspose[W] . NewConstantMatrix . W/(W1*W1)];,
+			"MachinePrecision", NewConstantMatrix=ConjugateTranspose[W] . NewConstantMatrix . W/(W1*W1);,
+			"HighPrecision", NewConstantMatrix=ConjugateTranspose[W] . NewConstantMatrix . W/(W1*W1);
+			];
+	Switch[TType, (* and all the rest linearization matrices of the canonical minimal linearization *)
+			"Exact", NewLinearizationMatrixList=
+				Table[Simplify[ConjugateTranspose[W] . NewLinearizationMatrixList[[i]] . W/(W1*W1)],
+						{i,Length[VariableList]}];,
+			"MachinePrecision", NewLinearizationMatrixList=
+				Table[ConjugateTranspose[W] . NewLinearizationMatrixList[[i]] . W/(W1*W1),
+					{i,Length[VariableList]}];,
+			"HighPrecision", NewLinearizationMatrixList=
+				Table[ConjugateTranspose[W] . NewLinearizationMatrixList[[i]] . W/(W1*W1),
+					{i,Length[VariableList]}];
+			];
+	Switch[TType, (* and compute the canonical minimal linearization*)
+			"Exact", NewLinearization=
+				Simplify[
+			NewConstantMatrix+Total[Table[VariableList[[k]]*NewLinearizationMatrixList[[k]],{k,Length[VariableList]}]]
+				];,
+			"MachinePrecision", NewLinearization=
+			NewConstantMatrix+Total[Table[VariableList[[k]]*NewLinearizationMatrixList[[k]],{k,Length[VariableList]}]];,
+			"HighPrecision", NewLinearization=
+			NewConstantMatrix+Total[Table[VariableList[[k]]*NewLinearizationMatrixList[[k]],{k,Length[VariableList]}]];
+			];
 	Return[
 		NewLinearization
 		];
@@ -1295,77 +1052,6 @@ ReconstructPolynomial[CCanLin_,CCheck_:"NoCheck",Poly_:0,PPrecision_:MachinePrec
 								],Infinity
 							]
 					];
-				
-				(*ReconstructedPolynomial
-					=NCExpand[
-						CCanLin[[1,1]]
-						-ConstantMatrix[[1,2;;Length[ConstantMatrix]]].ConstantMinorInverse
-									.ConstantMatrix[[2;;Length[ConstantMatrix],1]]
-						-Total[
-							Table[
-								ConstantMatrix[[1,2;;Length[ConstantMatrix]]]
-									.ConstantMinorInverse
-									.LinearizationMatrixList[[j]][[2;;Length[ConstantMatrix],1]]
-									*VariableList[[j]]
-								,{j,Length[VariableList]}
-								],Infinity
-							]
-						-Total[
-							Table[
-								ConstantMatrix[[1,2;;Length[ConstantMatrix]]]
-									.MCList[[k]]
-									.ConstantMatrix[[2;;Length[ConstantMatrix],1]]
-									*MonomList[[k]]
-								,{k,Length[MCList]}
-								],Infinity
-							]
-						-Total[
-							Table[
-								ConstantMatrix[[1,2;;Length[ConstantMatrix]]]
-									.MCList[[k]]
-									.LinearizationMatrixList[[j]][[2;;Length[ConstantMatrix],1]]
-									*MonomList[[k]]**VariableList[[j]]
-								,{j,Length[VariableList]},{k,Length[MCList]}
-								],Infinity
-							]
-						-Total[
-							Table[
-								LinearizationMatrixList[[i]][[1,2;;Length[ConstantMatrix]]]
-									.ConstantMinorInverse
-									.ConstantMatrix[[2;;Length[ConstantMatrix],1]]
-									*VariableList[[i]]
-								,{i,Length[VariableList]}
-								],Infinity
-							]
-						-Total[
-							Table[
-								LinearizationMatrixList[[i]][[1,2;;Length[ConstantMatrix]]]
-									.MCList[[k]]
-									.ConstantMatrix[[2;;Length[ConstantMatrix],1]]
-									*VariableList[[i]]**MonomList[[k]]
-								,{i,Length[VariableList]},{k,Length[MCList]}
-								],Infinity
-							]
-						-Total[
-							Table[
-								LinearizationMatrixList[[i]][[1,2;;Length[ConstantMatrix]]]
-									.ConstantMinorInverse
-									.LinearizationMatrixList[[j]][[2;;Length[ConstantMatrix],1]]
-									*VariableList[[i]]**VariableList[[j]]
-								,{i,Length[VariableList]},{j,Length[VariableList]}
-								],Infinity
-							]
-						-Total[
-							Table[
-								LinearizationMatrixList[[i]][[1,2;;Length[ConstantMatrix]]]
-									.MCList[[k]]
-									.LinearizationMatrixList[[j]][[2;;Length[ConstantMatrix],1]]
-									*VariableList[[i]]**MonomList[[k]]**VariableList[[j]]
-								,{i,Length[VariableList]},{j,Length[VariableList]},{k,Length[MCList]}
-								],Infinity
-							]
-					];*)
-			
 			];
 			
 			If[Poly===0,
