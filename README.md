@@ -21,7 +21,7 @@ For each Mathematica notebook the repository also contains a .pdf file with the 
 Folders `ev_40K_interval` and `fano_phi_50_9k` contain auxiliary data files used in Mathematica notebooks.
 
 ### Usage
-To use the package, load the package in your Mathematica notebook together with [NCAlgebra package](https://github.com/NCAlgebra)
+To use the package, load the package in your Mathematica notebook together with [NCAlgebra package](https://github.com/NCAlgebra).
 
 ### Literature
 - `Kronecker_Examples.nb`: Alt, Erdos, Krueger and Nemish, 2019. Location of the spectrum of Kronecker random matrices [journal](https://doi.org/10.1214/18-aihp894), [arXiv](http://arxiv.org/abs/1706.08343)
