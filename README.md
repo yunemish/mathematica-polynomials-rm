@@ -18,6 +18,8 @@ Torben Krueger and Yuriy Nemish, 2023.
 
 For each Mathematica notebook the repository also contains a .pdf file with the output of the corresponding .nb file.
 
+Folders `ev_40K_interval` and `fano_phi_50_9k` contain auxiliary data files used in Mathematica notebooks.
+
 ### Usage
 To use the package, load the [NCAlgebra package](https://github.com/NCAlgebra)
 
