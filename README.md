@@ -2,7 +2,7 @@
 
 Authors: Torben Krueger, Yuriy Nemish
 
-Repository contains:
+### Repository contains:
 - `PolynomialsOfRandomMatrices.wl` - Mathematica package for numerical simulations of the eigenvalue distributions for polynomials of random matrices and related models
 - `PolynomialsOfRandomMatrices_Examples.nb` - Mathematica notebook with typical simple examples of applications of functions from `PolynomialsOfRandomMatrices.wl`
 - `Kronecker_Examples.nb` - Mathematica notebook with examples of applications of `PolynomialsOfRandomMatrices.wl` to Kronecker random matrices, in particular
